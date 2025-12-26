@@ -12,6 +12,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@e2b/code-interpreter": "^2.3.3",
     "@hookform/resolvers": "^5.2.1",
     "@inngest/agent-kit": "^0.13.2",
     "@prisma/client": "^6.15.0",
