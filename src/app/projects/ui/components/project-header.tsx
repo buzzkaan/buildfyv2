@@ -3,12 +3,7 @@ import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useSuspenseQuery } from "@tanstack/react-query";
 
-import {
-  ChevronsDownIcon,
-  ChevronLeftIcon,
-  EditIcon,
-  SunMoonIcon,
-} from "lucide-react";
+import { ChevronsDownIcon, ChevronLeftIcon, SunMoonIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useTRPC } from "@/trpc/client";
