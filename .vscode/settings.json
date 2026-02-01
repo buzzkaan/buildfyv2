@@ -3,5 +3,6 @@
         "activityBar.background": "#203305",
         "titleBar.activeBackground": "#2C4807",
         "titleBar.activeForeground": "#F4FDE8"
-    }
+    },
+    "typescript.tsdk": "node_modules\\typescript\\lib"
 }
