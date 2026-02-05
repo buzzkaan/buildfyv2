@@ -14,6 +14,7 @@ import { Form, FormField, FormItem } from "@/components/ui/form";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PROJECT_TEMPLATES } from "../../constants";
+import { useClerk } from "@clerk/nextjs";
 
 const formSchema = z.object({
   value: z
@@ -25,6 +26,7 @@ const formSchema = z.object({
 export const ProjectForm = () => {
   const router = useRouter();
   const trpc = useTRPC();
+  const clerk = useClerk();
   const queryClient = useQueryClient();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -42,6 +44,9 @@ export const ProjectForm = () => {
         //todo: Inval'date usage status
       },
       onError: (error) => {
+        if (error?.data?.code === "UNAUTHORIZED") {
+          clerk.openSignIn();
+        }
         //Todo : Redirect to project to pricing page if spec'f'c error
         toast.error(error.message);
       },

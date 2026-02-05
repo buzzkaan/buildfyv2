@@ -12,6 +12,8 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.37.3",
+    "@clerk/themes": "^2.4.51",
     "@e2b/code-interpreter": "^2.3.3",
     "@hookform/resolvers": "^5.2.1",
     "@inngest/agent-kit": "^0.13.2",
