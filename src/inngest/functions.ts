@@ -231,31 +231,6 @@ export const codeAgentFunction = inngest.createFunction(
       result.state.data.summary
     )
 
-    // const generateFragmentTitle = () => {
-    //   const output = fragmentTitleOutput[0]
-
-    //   if (output.type !== 'text') {
-    //     return 'Fragment'
-    //   }
-    //   if (Array.isArray(output.content)) {
-    //     return output.content.map(txt => txt).join('')
-    //   } else {
-    //     return output.content
-    //   }
-    // }
-
-    // const generateResponse = () => {
-    //   const output = responseOutput[0]
-    //   if (output.type !== 'text') {
-    //     return 'Here you go'
-    //   }
-    //   if (Array.isArray(output.content)) {
-    //     return output.map(txt => txt).join('')
-    //   } else {
-    //     return output.content
-    //   }
-    // }
-
     const isError =
       !result.state.data.summary ||
       Object.keys(result.state.data.files || {}).length === 0

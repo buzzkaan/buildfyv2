@@ -4,7 +4,8 @@
       "Bash(cat:*)",
       "Bash(python:*)",
       "Bash(node -e:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm run build)"
     ],
     "deny": [],
     "ask": []
