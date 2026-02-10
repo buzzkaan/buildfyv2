@@ -19,6 +19,7 @@ import {
   lastAssistantTextMessageContent,
   parseAgentOutput
 } from './utils'
+import { setupEditModeInSandbox } from '@/lib/edit-mode-setup'
 
 interface AgentState {
   summary: string
@@ -32,6 +33,10 @@ export const codeAgentFunction = inngest.createFunction(
   async ({ event, step }) => {
     const sandBoxId = await step.run('get-sandbox-id', async () => {
       const sandbox = await Sandbox.create('buildfy-nextjs-buzzka-test-2')
+
+      // Setup edit mode in the sandbox
+      await setupEditModeInSandbox(sandbox)
+
       return sandbox.sandboxId
     })
 
@@ -262,6 +267,7 @@ export const codeAgentFunction = inngest.createFunction(
           fragment: {
             create: {
               sandboxUrl: sandboxUrl,
+              sandboxId: sandBoxId,
               title: parseAgentOutput(fragmentTitleOutput),
               files: result.state.data.files
             }

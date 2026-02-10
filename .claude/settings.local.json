@@ -5,7 +5,8 @@
       "Bash(python:*)",
       "Bash(node -e:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm run build)"
+      "Bash(npm run build)",
+      "Bash(npx prisma migrate:*)"
     ],
     "deny": [],
     "ask": []

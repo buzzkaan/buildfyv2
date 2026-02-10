@@ -17,6 +17,7 @@ import Link from "next/link";
 import { FileExplorer } from "@/components/file-explorer";
 import { UserControl } from "@/modules/home/ui/components/user-control";
 import { useAuth } from "@clerk/nextjs";
+import { ElementData } from "../components/element-inspector";
 
 interface Props {
   projectId: string;
@@ -25,6 +26,8 @@ interface Props {
 export const ProjectView = ({ projectId }: Props) => {
   const [activeFragment, setActiveFragment] = useState<Fragment | null>(null);
   const [tabState, setTabState] = useState<"preview" | "code">("preview");
+  const [selectedElement, setSelectedElement] = useState<ElementData | null>(null);
+  const [showElementInspector, setShowElementInspector] = useState(false);
 
   const { has } = useAuth();
   const hasProAcces = has?.({ plan: "pro" });
@@ -43,6 +46,10 @@ export const ProjectView = ({ projectId }: Props) => {
               projectId={projectId}
               activeFragment={activeFragment}
               setActiveFragment={setActiveFragment}
+              selectedElement={selectedElement}
+              setSelectedElement={setSelectedElement}
+              showElementInspector={showElementInspector}
+              setShowElementInspector={setShowElementInspector}
             />
           </Suspense>
         </ResizablePanel>
@@ -79,7 +86,16 @@ export const ProjectView = ({ projectId }: Props) => {
               </div>
             </div>
             <TabsContent value="preview">
-              {!!activeFragment && <FragmentWeb data={activeFragment} />}
+              {!!activeFragment && (
+                <FragmentWeb
+                  data={activeFragment}
+                  onElementSelected={(element) => {
+                    setSelectedElement(element);
+                    setShowElementInspector(true);
+                  }}
+                  onElementUpdated={setSelectedElement}
+                />
+              )}
             </TabsContent>
             <TabsContent value="code" className="min-h-0">
               {!!activeFragment?.files && (

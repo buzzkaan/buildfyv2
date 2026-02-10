@@ -5,17 +5,28 @@ import { MessageCard } from "./message-card";
 import { MessageForm } from "./message-form";
 import { MessageLoading } from "./message-loading";
 import { Fragment } from "@/generated/prisma";
+import { ElementInspector, ElementData } from "./element-inspector";
+import { Button } from "@/components/ui/button";
+import { MessageSquareTextIcon } from "lucide-react";
 
 interface Props {
   projectId: string;
   activeFragment: Fragment | null;
   setActiveFragment: (fragment: Fragment | null) => void;
+  selectedElement: ElementData | null;
+  setSelectedElement: (element: ElementData | null) => void;
+  showElementInspector: boolean;
+  setShowElementInspector: (show: boolean) => void;
 }
 
 export const MessagesContainer = ({
   projectId,
   activeFragment,
   setActiveFragment,
+  selectedElement,
+  setSelectedElement,
+  showElementInspector,
+  setShowElementInspector,
 }: Props) => {
   const trpc = useTRPC();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -54,6 +65,42 @@ export const MessagesContainer = ({
 
   const lastMessage = messages[messages.length - 1];
   const isLastMessageUser = lastMessage?.role === "USER";
+
+  const handleBackToChat = () => {
+    setShowElementInspector(false);
+    setSelectedElement(null);
+  };
+
+  const handleElementUpdate = (updates: Partial<ElementData>) => {
+    // Send update to parent window (FragmentWeb will handle the iframe communication)
+    window.postMessage({
+      type: 'INSPECTOR_UPDATE',
+      updates,
+    }, '*');
+  };
+
+  if (showElementInspector) {
+    return (
+      <div className="flex flex-col flex-1 min-h-0">
+        <div className="p-3 border-b flex items-center gap-x-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleBackToChat}
+            className="gap-x-2"
+          >
+            <MessageSquareTextIcon className="h-4 w-4" />
+            Back to Chat
+          </Button>
+        </div>
+        <ElementInspector
+          selectedElement={selectedElement}
+          onUpdate={handleElementUpdate}
+          onClose={handleBackToChat}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
