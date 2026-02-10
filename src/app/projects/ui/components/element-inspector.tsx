@@ -340,7 +340,7 @@ export const ElementInspector = ({
 
             <Separator className="my-6" />
 
-            {/* Spacing Section with Visual Box Model */}
+            {/* Spacing Section with Interactive Box Model */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
@@ -348,134 +348,88 @@ export const ElementInspector = ({
                 <div className="h-px flex-1 bg-gradient-to-r from-border via-transparent to-transparent" />
               </div>
 
-              {/* Visual Box Model */}
-              <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/20 dark:to-orange-900/10 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
-                <div className="text-[10px] text-orange-600 dark:text-orange-400 font-semibold mb-2">MARGIN</div>
-                <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/10 p-4 rounded border border-green-200 dark:border-green-800">
-                  <div className="text-[10px] text-green-600 dark:text-green-400 font-semibold mb-2">PADDING</div>
-                  <div className="bg-blue-100 dark:bg-blue-900/20 p-4 rounded border border-blue-200 dark:border-blue-800 text-center">
-                    <div className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">CONTENT</div>
-                    <div className="text-xs text-muted-foreground mt-1">
+              {/* Interactive Box Model - Figma Style */}
+              <div className="relative p-6 bg-gradient-to-br from-orange-50 via-orange-50 to-orange-100 dark:from-orange-950/20 dark:via-orange-950/15 dark:to-orange-900/10 rounded-lg border-2 border-orange-200 dark:border-orange-800 shadow-sm">
+                {/* Margin Label */}
+                <div className="absolute top-1 left-2 text-[9px] font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">
+                  Margin
+                </div>
+
+                {/* Margin Inputs */}
+                <input
+                  type="number"
+                  value={parseSpacing(getStyleValue("marginTop"))}
+                  onChange={(e) => updateStyle("marginTop", e.target.value + "px")}
+                  className="absolute top-1 left-1/2 -translate-x-1/2 w-12 h-6 text-center text-[11px] font-mono border border-orange-300 dark:border-orange-700 rounded bg-white dark:bg-orange-950/30 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                  placeholder="0"
+                />
+                <input
+                  type="number"
+                  value={parseSpacing(getStyleValue("marginRight"))}
+                  onChange={(e) => updateStyle("marginRight", e.target.value + "px")}
+                  className="absolute top-1/2 -translate-y-1/2 right-1 w-12 h-6 text-center text-[11px] font-mono border border-orange-300 dark:border-orange-700 rounded bg-white dark:bg-orange-950/30 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                  placeholder="0"
+                />
+                <input
+                  type="number"
+                  value={parseSpacing(getStyleValue("marginBottom"))}
+                  onChange={(e) => updateStyle("marginBottom", e.target.value + "px")}
+                  className="absolute bottom-1 left-1/2 -translate-x-1/2 w-12 h-6 text-center text-[11px] font-mono border border-orange-300 dark:border-orange-700 rounded bg-white dark:bg-orange-950/30 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                  placeholder="0"
+                />
+                <input
+                  type="number"
+                  value={parseSpacing(getStyleValue("marginLeft"))}
+                  onChange={(e) => updateStyle("marginLeft", e.target.value + "px")}
+                  className="absolute top-1/2 -translate-y-1/2 left-1 w-12 h-6 text-center text-[11px] font-mono border border-orange-300 dark:border-orange-700 rounded bg-white dark:bg-orange-950/30 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                  placeholder="0"
+                />
+
+                {/* Padding Box */}
+                <div className="relative p-6 bg-gradient-to-br from-green-50 via-green-50 to-green-100 dark:from-green-950/20 dark:via-green-950/15 dark:to-green-900/10 rounded border-2 border-green-200 dark:border-green-800">
+                  {/* Padding Label */}
+                  <div className="absolute top-1 left-2 text-[9px] font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">
+                    Padding
+                  </div>
+
+                  {/* Padding Inputs */}
+                  <input
+                    type="number"
+                    value={parseSpacing(getStyleValue("paddingTop"))}
+                    onChange={(e) => updateStyle("paddingTop", e.target.value + "px")}
+                    className="absolute top-1 left-1/2 -translate-x-1/2 w-12 h-6 text-center text-[11px] font-mono border border-green-300 dark:border-green-700 rounded bg-white dark:bg-green-950/30 focus:ring-1 focus:ring-green-500 focus:outline-none"
+                    placeholder="0"
+                  />
+                  <input
+                    type="number"
+                    value={parseSpacing(getStyleValue("paddingRight"))}
+                    onChange={(e) => updateStyle("paddingRight", e.target.value + "px")}
+                    className="absolute top-1/2 -translate-y-1/2 right-1 w-12 h-6 text-center text-[11px] font-mono border border-green-300 dark:border-green-700 rounded bg-white dark:bg-green-950/30 focus:ring-1 focus:ring-green-500 focus:outline-none"
+                    placeholder="0"
+                  />
+                  <input
+                    type="number"
+                    value={parseSpacing(getStyleValue("paddingBottom"))}
+                    onChange={(e) => updateStyle("paddingBottom", e.target.value + "px")}
+                    className="absolute bottom-1 left-1/2 -translate-x-1/2 w-12 h-6 text-center text-[11px] font-mono border border-green-300 dark:border-green-700 rounded bg-white dark:bg-green-950/30 focus:ring-1 focus:ring-green-500 focus:outline-none"
+                    placeholder="0"
+                  />
+                  <input
+                    type="number"
+                    value={parseSpacing(getStyleValue("paddingLeft"))}
+                    onChange={(e) => updateStyle("paddingLeft", e.target.value + "px")}
+                    className="absolute top-1/2 -translate-y-1/2 left-1 w-12 h-6 text-center text-[11px] font-mono border border-green-300 dark:border-green-700 rounded bg-white dark:bg-green-950/30 focus:ring-1 focus:ring-green-500 focus:outline-none"
+                    placeholder="0"
+                  />
+
+                  {/* Content Box */}
+                  <div className="flex flex-col items-center justify-center p-6 bg-blue-100 dark:bg-blue-900/20 rounded border-2 border-blue-200 dark:border-blue-800 min-h-[80px]">
+                    <div className="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">
+                      Content
+                    </div>
+                    <div className="text-xs font-mono text-muted-foreground">
                       {Math.round(localElement.rect.width)} × {Math.round(localElement.rect.height)}
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Margin Controls */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground font-semibold">Margin</Label>
-                <div className="grid grid-cols-4 gap-2">
-                  <div className="space-y-1">
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        value={parseSpacing(getStyleValue("marginTop"))}
-                        onChange={(e) => updateStyle("marginTop", e.target.value + "px")}
-                        placeholder="0"
-                        className="text-xs pl-7 h-9 bg-orange-50/50 dark:bg-orange-950/10 border-orange-200 dark:border-orange-800 focus:ring-orange-500"
-                      />
-                      <MoveUpIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-orange-600 dark:text-orange-400" />
-                    </div>
-                    <div className="text-[10px] text-center text-muted-foreground">Top</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        value={parseSpacing(getStyleValue("marginRight"))}
-                        onChange={(e) => updateStyle("marginRight", e.target.value + "px")}
-                        placeholder="0"
-                        className="text-xs pl-7 h-9 bg-orange-50/50 dark:bg-orange-950/10 border-orange-200 dark:border-orange-800 focus:ring-orange-500"
-                      />
-                      <MoveRightIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-orange-600 dark:text-orange-400" />
-                    </div>
-                    <div className="text-[10px] text-center text-muted-foreground">Right</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        value={parseSpacing(getStyleValue("marginBottom"))}
-                        onChange={(e) => updateStyle("marginBottom", e.target.value + "px")}
-                        placeholder="0"
-                        className="text-xs pl-7 h-9 bg-orange-50/50 dark:bg-orange-950/10 border-orange-200 dark:border-orange-800 focus:ring-orange-500"
-                      />
-                      <MoveDownIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-orange-600 dark:text-orange-400" />
-                    </div>
-                    <div className="text-[10px] text-center text-muted-foreground">Bottom</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        value={parseSpacing(getStyleValue("marginLeft"))}
-                        onChange={(e) => updateStyle("marginLeft", e.target.value + "px")}
-                        placeholder="0"
-                        className="text-xs pl-7 h-9 bg-orange-50/50 dark:bg-orange-950/10 border-orange-200 dark:border-orange-800 focus:ring-orange-500"
-                      />
-                      <MoveLeftIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-orange-600 dark:text-orange-400" />
-                    </div>
-                    <div className="text-[10px] text-center text-muted-foreground">Left</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Padding Controls */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground font-semibold">Padding</Label>
-                <div className="grid grid-cols-4 gap-2">
-                  <div className="space-y-1">
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        value={parseSpacing(getStyleValue("paddingTop"))}
-                        onChange={(e) => updateStyle("paddingTop", e.target.value + "px")}
-                        placeholder="0"
-                        className="text-xs pl-7 h-9 bg-green-50/50 dark:bg-green-950/10 border-green-200 dark:border-green-800 focus:ring-green-500"
-                      />
-                      <MoveUpIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div className="text-[10px] text-center text-muted-foreground">Top</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        value={parseSpacing(getStyleValue("paddingRight"))}
-                        onChange={(e) => updateStyle("paddingRight", e.target.value + "px")}
-                        placeholder="0"
-                        className="text-xs pl-7 h-9 bg-green-50/50 dark:bg-green-950/10 border-green-200 dark:border-green-800 focus:ring-green-500"
-                      />
-                      <MoveRightIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div className="text-[10px] text-center text-muted-foreground">Right</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        value={parseSpacing(getStyleValue("paddingBottom"))}
-                        onChange={(e) => updateStyle("paddingBottom", e.target.value + "px")}
-                        placeholder="0"
-                        className="text-xs pl-7 h-9 bg-green-50/50 dark:bg-green-950/10 border-green-200 dark:border-green-800 focus:ring-green-500"
-                      />
-                      <MoveDownIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div className="text-[10px] text-center text-muted-foreground">Bottom</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        value={parseSpacing(getStyleValue("paddingLeft"))}
-                        onChange={(e) => updateStyle("paddingLeft", e.target.value + "px")}
-                        placeholder="0"
-                        className="text-xs pl-7 h-9 bg-green-50/50 dark:bg-green-950/10 border-green-200 dark:border-green-800 focus:ring-green-500"
-                      />
-                      <MoveLeftIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div className="text-[10px] text-center text-muted-foreground">Left</div>
                   </div>
                 </div>
               </div>
@@ -957,8 +911,8 @@ export const ElementInspector = ({
               </div>
             </div>
           </TabsContent>
-        </Tabs>
-      </ScrollArea>
+        </ScrollArea>
+      </Tabs>
     </div>
   );
 };
