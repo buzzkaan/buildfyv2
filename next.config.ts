@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },
+  serverExternalPackages: [
+    "@opentelemetry/instrumentation-winston",
+    "@opentelemetry/auto-instrumentations-node",
+    "@e2b/code-interpreter",
+    "e2b",
+  ],
 };
 
 export default nextConfig;
