@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import OpenAI from "openai"
 
-const client = new OpenAI()
+export const dynamic = "force-dynamic"
 
 const MAX_PROMPT_LENGTH = 2000
 
 export async function POST(req: NextRequest) {
+  const client = new OpenAI()
   const { userId } = await auth()
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
