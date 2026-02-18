@@ -3,6 +3,8 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/db'
 import Sandbox from '@e2b/code-interpreter'
 
+export const maxDuration = 30
+
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await auth()
@@ -15,10 +17,7 @@ export async function POST(req: NextRequest) {
     const { fragmentId, files, sandboxId } = body
 
     if (!fragmentId || !files || !sandboxId) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     // Verify fragment ownership
@@ -26,9 +25,7 @@ export async function POST(req: NextRequest) {
       where: { id: fragmentId },
       include: {
         message: {
-          include: {
-            project: true
-          }
+          include: { project: true }
         }
       }
     })
@@ -37,39 +34,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Connect to sandbox and update files
     const sandbox = await Sandbox.connect(sandboxId)
 
-    try {
-      // Update files in sandbox
-      for (const [path, content] of Object.entries(files)) {
-        await sandbox.files.write(path as string, content as string)
-      }
+    // Write all files in parallel
+    await Promise.all(
+      Object.entries(files).map(([path, content]) =>
+        sandbox.files.write(path, content as string)
+      )
+    )
 
-      // Update fragment in database
-      await prisma.fragment.update({
-        where: { id: fragmentId },
-        data: {
-          files: files
-        }
-      })
+    await prisma.fragment.update({
+      where: { id: fragmentId },
+      data: { files }
+    })
 
-      return NextResponse.json({
-        success: true,
-        message: 'Sandbox updated successfully'
-      })
-    } finally {
-      // Always close the sandbox connection
-      await sandbox.close()
-    }
+    return NextResponse.json({ success: true, message: 'Sandbox updated successfully' })
   } catch (error) {
     console.error('Error updating sandbox:', error)
-    return NextResponse.json(
-      {
-        error: 'Failed to update sandbox',
-        details: error instanceof Error ? error.message : String(error)
-      },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to update sandbox' }, { status: 500 })
   }
 }

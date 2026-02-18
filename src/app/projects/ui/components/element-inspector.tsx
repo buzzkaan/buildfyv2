@@ -8,9 +8,16 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { XIcon, PlusIcon, TrashIcon, MoveUpIcon, MoveDownIcon, MoveLeftIcon, MoveRightIcon, Pipette } from "lucide-react";
-import { useState, useEffect } from "react";
+import { XIcon, PlusIcon, TrashIcon, MoveUpIcon, MoveDownIcon, MoveLeftIcon, MoveRightIcon, Pipette, SparklesIcon, ArrowUpIcon, Loader2Icon, ChevronDownIcon } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+
+type ModelId = "gpt-4.1" | "gpt-4o" | "gpt-4o-mini";
+const AI_MODELS: { id: ModelId; label: string; desc: string }[] = [
+  { id: "gpt-4.1",     label: "GPT-4.1",     desc: "Most capable" },
+  { id: "gpt-4o",      label: "GPT-4o",       desc: "Balanced" },
+  { id: "gpt-4o-mini", label: "GPT-4o-mini",  desc: "Fastest" },
+];
 
 export interface ElementData {
   elementId?: number;
@@ -34,6 +41,7 @@ interface Props {
   selectedElement: ElementData | null;
   onUpdate: (updates: Partial<ElementData>) => void;
   onClose?: () => void;
+  onAskAI?: (prompt: string, element: ElementData, model: ModelId) => Promise<void>;
 }
 
 // Tailwind Color Palette
@@ -188,11 +196,41 @@ export const ElementInspector = ({
   selectedElement,
   onUpdate,
   onClose,
+  onAskAI,
 }: Props) => {
   const [localElement, setLocalElement] = useState<ElementData | null>(null);
   const [newClassName, setNewClassName] = useState("");
   const [newAttrName, setNewAttrName] = useState("");
   const [newAttrValue, setNewAttrValue] = useState("");
+
+  // AI Ask state
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiModel, setAiModel] = useState<ModelId>("gpt-4.1");
+  const [aiModelOpen, setAiModelOpen] = useState(false);
+  const aiModelRef = useRef<HTMLDivElement>(null);
+  const [aiFocused, setAiFocused] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (aiModelRef.current && !aiModelRef.current.contains(e.target as Node)) {
+        setAiModelOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleAskAI = async () => {
+    if (!aiPrompt.trim() || !localElement || !onAskAI || aiLoading) return;
+    setAiLoading(true);
+    try {
+      await onAskAI(aiPrompt.trim(), localElement, aiModel);
+      setAiPrompt("");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   useEffect(() => {
     setLocalElement(selectedElement);
@@ -292,8 +330,12 @@ export const ElementInspector = ({
         </div>
       </div>
 
-      <Tabs defaultValue="design" className="w-full flex-1 flex flex-col">
+      <Tabs defaultValue="ai" className="w-full flex-1 flex flex-col">
         <TabsList className="w-full justify-start rounded-none border-b h-9 bg-muted/20 flex-shrink-0">
+          <TabsTrigger value="ai" className="text-xs data-[state=active]:bg-background flex items-center gap-1">
+            <SparklesIcon className="h-3 w-3" />
+            AI
+          </TabsTrigger>
           <TabsTrigger value="design" className="text-xs data-[state=active]:bg-background">
             Design
           </TabsTrigger>
@@ -304,6 +346,134 @@ export const ElementInspector = ({
             Properties
           </TabsTrigger>
         </TabsList>
+
+        {/* ── AI TAB (outside ScrollArea, full flex col) ── */}
+        <TabsContent value="ai" className="flex-1 flex flex-col m-0 data-[state=inactive]:hidden">
+          {/* Element context strip */}
+          <div className="px-4 py-2.5 border-b border-border/40 bg-secondary/10">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground/50">Element</span>
+              <span className="font-mono text-[10px] text-accent truncate">
+                {localElement?.tag}
+                {localElement?.classList?.slice(0, 2).map((c) => `.${c}`).join("")}
+                {(localElement?.classList?.length ?? 0) > 2 && "…"}
+              </span>
+            </div>
+            {localElement?.path && (
+              <div className="font-mono text-[9px] text-muted-foreground/40 truncate mt-0.5">
+                {localElement.path}
+              </div>
+            )}
+          </div>
+
+          {/* Suggestion chips */}
+          <div className="px-4 pt-3 pb-1 flex flex-wrap gap-1.5">
+            {[
+              "Make it more modern",
+              "Change the color scheme",
+              "Add hover animation",
+              "Make text larger",
+              "Remove this element",
+            ].map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                onClick={() => setAiPrompt(suggestion)}
+                className="font-mono text-[9px] uppercase tracking-wider border border-border/40 px-2 py-1 text-muted-foreground/60 hover:border-accent/40 hover:text-accent transition-colors"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Form — pinned to bottom */}
+          <div className="px-4 pb-4 pt-2">
+            <div
+              className={cn(
+                "relative border border-border/60 bg-card/30 backdrop-blur-sm transition-colors duration-200",
+                aiFocused && "border-accent/40",
+              )}
+            >
+              <textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                onFocus={() => setAiFocused(true)}
+                onBlur={() => setAiFocused(false)}
+                disabled={aiLoading || !onAskAI}
+                rows={3}
+                placeholder={
+                  onAskAI
+                    ? "Describe what to change on this element…"
+                    : "AI editing not available"
+                }
+                className="w-full resize-none bg-transparent px-4 pt-4 pb-10 font-mono text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none leading-relaxed"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    handleAskAI();
+                  }
+                }}
+              />
+
+              {/* Bottom bar */}
+              <div className="absolute bottom-2.5 left-4 right-4 flex items-center justify-between">
+                {/* Model picker */}
+                <div ref={aiModelRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setAiModelOpen((v) => !v)}
+                    className="flex items-center gap-1 border border-border/40 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-muted-foreground/70 hover:border-accent/40 hover:text-accent transition-colors"
+                  >
+                    {AI_MODELS.find((m) => m.id === aiModel)?.label}
+                    <ChevronDownIcon className={cn("h-2.5 w-2.5 transition-transform", aiModelOpen && "rotate-180")} />
+                  </button>
+
+                  {aiModelOpen && (
+                    <div className="absolute bottom-full mb-1.5 left-0 z-50 border border-border/60 bg-card/95 backdrop-blur-sm shadow-lg min-w-[160px]">
+                      {AI_MODELS.map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => { setAiModel(m.id); setAiModelOpen(false); }}
+                          className={cn(
+                            "w-full flex items-center justify-between px-3 py-2 font-mono text-[10px] hover:bg-secondary/50 transition-colors",
+                            aiModel === m.id ? "text-accent" : "text-muted-foreground",
+                          )}
+                        >
+                          <span className="uppercase tracking-wider">{m.label}</span>
+                          <span className="text-muted-foreground/50 normal-case tracking-normal ml-3">{m.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Submit */}
+                <div className="flex items-center gap-2">
+                  <kbd className="inline-flex items-center gap-1 border border-border/40 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-muted-foreground/60">
+                    ⌘ Enter
+                  </kbd>
+                  <button
+                    type="button"
+                    onClick={handleAskAI}
+                    disabled={!aiPrompt.trim() || aiLoading || !onAskAI}
+                    className="flex h-7 w-7 items-center justify-center border border-border/40 text-muted-foreground transition-all duration-200 hover:border-accent hover:text-accent disabled:opacity-20"
+                    aria-label="Ask AI"
+                  >
+                    {aiLoading ? (
+                      <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <ArrowUpIcon className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
 
         <ScrollArea className="flex-1 h-full">
 

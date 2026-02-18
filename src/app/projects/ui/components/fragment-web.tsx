@@ -3,9 +3,114 @@
 import { Hint } from "@/components/hint";
 import { Button } from "@/components/ui/button";
 import { Fragment } from "@/generated/prisma";
-import { ExternalLinkIcon, RefreshCcwIcon, Edit3Icon, EyeIcon, SaveIcon } from "lucide-react";
+import { ExternalLinkIcon, EyeIcon, SaveIcon, RotateCcw, Pencil, PowerIcon, Loader2Icon } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import { ElementData } from "./element-inspector";
+
+const IframeLoadingOverlay = () => (
+  <>
+    <style>{`
+      @keyframes iframeScan {
+        0% { transform: translateY(-100%); }
+        100% { transform: translateY(700%); }
+      }
+      @keyframes iframeSpin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @keyframes iframeBounce {
+        0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
+        40% { transform: translateY(-5px); opacity: 1; }
+      }
+      @keyframes iframeGlow {
+        0%, 100% { box-shadow: 0 0 20px oklch(from var(--accent) l c h / 0.0); }
+        50% { box-shadow: 0 0 40px oklch(from var(--accent) l c h / 0.12); }
+      }
+      .iframe-scan { animation: iframeScan 5s linear infinite; }
+      .iframe-spin { animation: iframeSpin 1.4s linear infinite; border-top-color: var(--accent) !important; }
+      .iframe-glow { animation: iframeGlow 3s ease-in-out infinite; }
+      .iframe-d1 { animation: iframeBounce 1.2s ease-in-out infinite; animation-delay: 0ms; }
+      .iframe-d2 { animation: iframeBounce 1.2s ease-in-out infinite; animation-delay: 180ms; }
+      .iframe-d3 { animation: iframeBounce 1.2s ease-in-out infinite; animation-delay: 360ms; }
+    `}</style>
+    <div
+      className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden bg-background"
+      style={{
+        backgroundImage: [
+          "linear-gradient(var(--border) 1px, transparent 1px)",
+          "linear-gradient(90deg, var(--border) 1px, transparent 1px)",
+        ].join(", "),
+        backgroundSize: "48px 48px",
+      }}
+    >
+      {/* Darken grid so it's subtle */}
+      <div className="absolute inset-0 bg-background/75" />
+
+      {/* Scanline sweep */}
+      <div
+        className="iframe-scan absolute left-0 right-0 h-32 pointer-events-none z-10"
+        style={{
+          background:
+            "linear-gradient(to bottom, transparent, oklch(from var(--accent) l c h / 0.07), transparent)",
+        }}
+      />
+
+      {/* Card */}
+      <div
+        className="iframe-glow relative z-20 flex flex-col items-center gap-6 px-10 py-8 border border-border/60 bg-background/95"
+      >
+        {/* Spinner rings */}
+        <div className="relative w-16 h-16">
+          {/* Static outer */}
+          <div className="absolute inset-0 rounded-full border border-border/30" />
+          {/* Spinning accent */}
+          <div
+            className="iframe-spin absolute inset-0 rounded-full border-2 border-transparent"
+            style={{ borderTopColor: "var(--accent)" }}
+          />
+          {/* Middle static */}
+          <div className="absolute inset-[5px] rounded-full border border-border/20" />
+          {/* Inner spinning (slower, reverse) */}
+          <div
+            className="absolute inset-[5px] rounded-full border border-transparent"
+            style={{
+              borderBottomColor: "var(--accent)",
+              opacity: 0.4,
+              animation: "iframeSpin 2.2s linear infinite reverse",
+            }}
+          />
+          {/* Center */}
+          <div
+            className="absolute inset-[11px] rounded-full"
+            style={{ backgroundColor: "var(--accent)", opacity: 0.15 }}
+          />
+        </div>
+
+        {/* Labels */}
+        <div className="flex flex-col items-center gap-2.5">
+          <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-muted-foreground">
+            Initializing preview
+          </span>
+          <div className="flex items-center gap-1.5">
+            <span
+              className="iframe-d1 block w-1.5 h-1.5 rounded-full"
+              style={{ backgroundColor: "var(--accent)" }}
+            />
+            <span
+              className="iframe-d2 block w-1.5 h-1.5 rounded-full"
+              style={{ backgroundColor: "var(--accent)" }}
+            />
+            <span
+              className="iframe-d3 block w-1.5 h-1.5 rounded-full"
+              style={{ backgroundColor: "var(--accent)" }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </>
+);
 
 interface Props {
   data: Fragment;
@@ -19,7 +124,15 @@ export const FragmentWeb = ({ data, onElementSelected, onElementUpdated }: Props
   const [editMode, setEditMode] = useState(false);
   const [editModeReady, setEditModeReady] = useState(false);
   const [pendingHTMLSave, setPendingHTMLSave] = useState<string | null>(null);
+  const [isIframeLoading, setIsIframeLoading] = useState(true);
+  const [isRestarting, setIsRestarting] = useState(false);
+  const [overrideSandboxUrl, setOverrideSandboxUrl] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Re-show loading overlay each time the iframe reloads
+  useEffect(() => {
+    setIsIframeLoading(true);
+  }, [fragmentKey]);
 
   const onRefresh = () => {
     setFragmentKey((prev) => prev + 1);
@@ -27,7 +140,8 @@ export const FragmentWeb = ({ data, onElementSelected, onElementUpdated }: Props
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(data.sandboxUrl);
+    if (!activeSandboxUrl) return;
+    navigator.clipboard.writeText(activeSandboxUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -35,58 +149,68 @@ export const FragmentWeb = ({ data, onElementSelected, onElementUpdated }: Props
   const toggleEditMode = () => {
     const newEditMode = !editMode;
     setEditMode(newEditMode);
-    // Refresh iframe to apply/remove edit mode
     setFragmentKey((prev) => prev + 1);
     setEditModeReady(false);
   };
 
-  // Get iframe URL with edit mode parameter
+  const activeSandboxUrl = overrideSandboxUrl ?? data.sandboxUrl;
+
   const getIframeUrl = () => {
-    if (!data.sandboxUrl) return '';
-    const url = new URL(data.sandboxUrl);
+    if (!activeSandboxUrl) return '';
+    const url = new URL(activeSandboxUrl);
     if (editMode) {
       url.searchParams.set('__edit_mode__', 'true');
     }
     return url.toString();
   };
 
-  // Listen for messages from iframe and inspector
+  const handleRestart = async () => {
+    setIsRestarting(true);
+    setIsIframeLoading(true);
+    try {
+      const res = await fetch('/api/restart-sandbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fragmentId: data.id }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed');
+      setOverrideSandboxUrl(result.sandboxUrl);
+      setFragmentKey((prev) => prev + 1);
+      setEditModeReady(false);
+      toast.success('Sandbox restarted');
+    } catch (err) {
+      toast.error('Could not restart sandbox');
+      setIsIframeLoading(false);
+    } finally {
+      setIsRestarting(false);
+    }
+  };
+
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Messages from iframe
       if (event.source === iframeRef.current?.contentWindow) {
-        console.log('[FragmentWeb] Message from iframe:', event.data.type);
-
         switch (event.data.type) {
           case "EDIT_MODE_READY":
-            console.log('[FragmentWeb] Edit mode ready!');
             setEditModeReady(true);
             break;
-
           case "ELEMENT_SELECTED":
-            console.log('[FragmentWeb] Element selected:', event.data.data);
             if (onElementSelected) {
               onElementSelected(event.data.data);
             }
             break;
-
           case "ELEMENT_UPDATED":
-            console.log('[FragmentWeb] Element updated:', event.data.data);
             if (onElementUpdated) {
               onElementUpdated(event.data.data);
             }
             break;
-
           case "HTML_RESPONSE":
-            console.log('[FragmentWeb] HTML received from iframe');
             setPendingHTMLSave(event.data.html);
             break;
         }
       }
 
-      // Messages from inspector (via MessagesContainer)
       if (event.data.type === 'INSPECTOR_UPDATE') {
-        console.log('[FragmentWeb] Inspector update:', event.data.updates);
         handleElementUpdate(event.data.updates);
       }
     };
@@ -95,14 +219,10 @@ export const FragmentWeb = ({ data, onElementSelected, onElementUpdated }: Props
     return () => window.removeEventListener("message", handleMessage);
   }, [onElementSelected, onElementUpdated]);
 
-  // Send updates to iframe
   const handleElementUpdate = (updates: Partial<ElementData>) => {
     if (!iframeRef.current?.contentWindow) {
-      console.warn('[FragmentWeb] No iframe contentWindow available');
       return;
     }
-
-    console.log('[FragmentWeb] Sending update to iframe:', updates);
     iframeRef.current.contentWindow.postMessage(
       {
         type: "UPDATE_ELEMENT",
@@ -117,31 +237,21 @@ export const FragmentWeb = ({ data, onElementSelected, onElementUpdated }: Props
       console.error("Cannot save: missing iframe or sandbox ID");
       return;
     }
-
-    // Request HTML from iframe via postMessage
-    console.log('[FragmentWeb] Requesting HTML from iframe');
     iframeRef.current.contentWindow.postMessage(
       { type: 'GET_HTML' },
       '*'
     );
   };
 
-  // Process HTML when received from iframe
   useEffect(() => {
     if (!pendingHTMLSave) return;
 
     const saveHTML = async () => {
       try {
         const updatedHTML = pendingHTMLSave;
-
-        // Extract body content for JSX
         const bodyMatch = updatedHTML.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
         const bodyContent = bodyMatch ? bodyMatch[1].trim() : updatedHTML;
-
-        // Get current files
         const files = data.files as { [path: string]: string };
-
-        // Find the main page file (could be page.tsx, page.js, etc.)
         const pageFile = Object.keys(files).find(
           path => path.includes('page.tsx') || path.includes('page.js')
         );
@@ -150,16 +260,11 @@ export const FragmentWeb = ({ data, onElementSelected, onElementUpdated }: Props
           throw new Error("Could not find page file to update");
         }
 
-        // For now, we'll store the HTML as a comment in the file
-        // A more sophisticated approach would parse and update the JSX
         const updatedFiles = {
           ...files,
           '__edited_html__.html': updatedHTML,
-          // You can uncomment this to update the actual page file
-          // [pageFile]: updatePageFileContent(files[pageFile], bodyContent)
         };
 
-        // Call API to update sandbox
         const response = await fetch('/api/update-sandbox', {
           method: 'POST',
           headers: {
@@ -178,17 +283,12 @@ export const FragmentWeb = ({ data, onElementSelected, onElementUpdated }: Props
         }
 
         const result = await response.json();
-        console.log('[FragmentWeb] Save successful:', result);
-        alert('Changes saved successfully!');
-
-        // Clear pending HTML
+        toast.success('Changes saved successfully!');
         setPendingHTMLSave(null);
-
-        // Optionally refresh the preview
         onRefresh();
       } catch (error) {
         console.error("Error saving changes:", error);
-        alert('Failed to save changes. See console for details.');
+        toast.error('Failed to save changes.');
         setPendingHTMLSave(null);
       }
     };
@@ -198,75 +298,98 @@ export const FragmentWeb = ({ data, onElementSelected, onElementUpdated }: Props
 
   return (
     <div className="flex flex-col w-full h-full">
-      <div className="p-2 border-b bg-sidebar flex items-center gap-x-2">
-        <Hint text="Refresh" side="bottom" align="start">
-          <Button size="sm" variant="outline" onClick={onRefresh}>
-            <RefreshCcwIcon />
-          </Button>
-        </Hint>
-
-        <Hint
-          text={editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
-          side="bottom"
-          align="start"
+      {/* Address bar — browser-style */}
+      <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border/40 bg-background">
+        {/* Reload */}
+        <button
+          onClick={onRefresh}
+          disabled={isRestarting}
+          className="flex items-center justify-center h-6 w-6 text-muted-foreground/50 hover:text-foreground transition-colors rounded-sm hover:bg-secondary/40 disabled:opacity-30"
+          aria-label="Reload"
         >
-          <Button
-            size="sm"
-            variant={editMode ? "default" : "outline"}
-            onClick={toggleEditMode}
-          >
-            {editMode ? <EyeIcon /> : <Edit3Icon />}
-          </Button>
-        </Hint>
+          <RotateCcw className="h-3 w-3" />
+        </button>
+
+        {/* Restart sandbox */}
+        <button
+          onClick={handleRestart}
+          disabled={isRestarting}
+          title="Restart sandbox"
+          className={`flex items-center justify-center h-6 w-6 transition-colors rounded-sm ${
+            isRestarting
+              ? 'text-accent opacity-70'
+              : 'text-muted-foreground/50 hover:text-accent hover:bg-secondary/40'
+          }`}
+          aria-label="Restart sandbox"
+        >
+          {isRestarting
+            ? <Loader2Icon className="h-3 w-3 animate-spin" />
+            : <PowerIcon className="h-3 w-3" />
+          }
+        </button>
+
+        {/* Edit mode toggle */}
+        <button
+          onClick={toggleEditMode}
+          className={`flex items-center justify-center h-6 w-6 transition-colors rounded-sm ${
+            editMode
+              ? "text-accent bg-accent/10"
+              : "text-muted-foreground/50 hover:text-foreground hover:bg-secondary/40"
+          }`}
+          aria-label={editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
+        >
+          {editMode ? <EyeIcon className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
+        </button>
 
         {editMode && (
-          <Hint text="Save Changes" side="bottom" align="start">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleSaveChanges}
-              disabled={!editModeReady}
-            >
-              <SaveIcon />
-            </Button>
-          </Hint>
+          <button
+            onClick={handleSaveChanges}
+            disabled={!editModeReady}
+            className="flex items-center justify-center h-6 w-6 text-muted-foreground/50 hover:text-foreground transition-colors rounded-sm hover:bg-secondary/40 disabled:opacity-30"
+            aria-label="Save Changes"
+          >
+            <SaveIcon className="h-3 w-3" />
+          </button>
         )}
 
-        <Hint text="Click to copy sandbox URL" side="bottom">
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1 justify-start text-sm font-normal"
-            onClick={handleCopy}
-            disabled={!data.sandboxUrl || copied}
-          >
-            <span className="truncate">{data.sandboxUrl}</span>
-          </Button>
-        </Hint>
+        {/* URL pill */}
+        <button
+          onClick={handleCopy}
+          disabled={!activeSandboxUrl || copied || isRestarting}
+          className="flex-1 flex items-center gap-2 bg-secondary/20 border border-border/30 rounded-full px-3 py-1 font-mono text-[10px] text-muted-foreground/60 truncate text-left hover:bg-secondary/40 hover:text-muted-foreground transition-all duration-150 disabled:opacity-40"
+        >
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isRestarting ? 'bg-orange-400 animate-pulse' : 'bg-emerald-500/70'}`} />
+          <span className="truncate">
+            {isRestarting ? "Restarting sandbox..." : copied ? "Copied to clipboard!" : activeSandboxUrl}
+          </span>
+        </button>
 
-        <Hint text="Open in a new tab" side="bottom" align="start">
-          <Button
-            size="sm"
-            disabled={!data.sandboxUrl}
-            variant="outline"
-            onClick={() => {
-              if (!data.sandboxUrl) return;
-              window.open(data.sandboxUrl, "_blank");
-            }}
-          >
-            <ExternalLinkIcon />
-          </Button>
-        </Hint>
+        {/* Open in new tab */}
+        <button
+          onClick={() => {
+            if (!activeSandboxUrl) return;
+            window.open(activeSandboxUrl, "_blank");
+          }}
+          disabled={!activeSandboxUrl || isRestarting}
+          className="flex items-center justify-center h-6 w-6 text-muted-foreground/50 hover:text-foreground transition-colors rounded-sm hover:bg-secondary/40 disabled:opacity-30"
+          aria-label="Open in new tab"
+        >
+          <ExternalLinkIcon className="h-3 w-3" />
+        </button>
       </div>
 
-      <iframe
-        ref={iframeRef}
-        key={fragmentKey}
-        className="h-full w-full"
-        sandbox="allow-forms allow-scripts allow-same-origin"
-        loading="lazy"
-        src={getIframeUrl()}
-      />
+      <div className="relative flex-1 min-h-0">
+        {isIframeLoading && <IframeLoadingOverlay />}
+        <iframe
+          ref={iframeRef}
+          key={fragmentKey}
+          className="absolute inset-0 h-full w-full"
+          sandbox="allow-forms allow-scripts allow-same-origin"
+          loading="lazy"
+          src={getIframeUrl()}
+          onLoad={() => setIsIframeLoading(false)}
+        />
+      </div>
     </div>
   );
 };

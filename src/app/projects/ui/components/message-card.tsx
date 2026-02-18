@@ -1,9 +1,8 @@
-import { Card } from "@/components/ui/card";
 import { MessageType, Fragment, MessageRole } from "@/generated/prisma";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ChevronRightIcon, Code2Icon } from "lucide-react";
-import Image from "next/image";
+import { BuildfyLogo } from "@/components/buildfy-logo";
 
 interface UserMessageProps {
     content: string;
@@ -31,26 +30,20 @@ const FragmentCard = ({
 }: FragmentCardProps) => {
     return (
         <button
-            className={cn("flex items-start text-start border rounded-lg   bg-muted gap-2 w-fit p-3 hover:bg-secondary transition-colors ",
-                isActiveFragment && "bg-primary text-primary-foreground border-primary hover:bg-primary",
+            className={cn(
+                "group self-start flex items-center gap-2.5 px-3 py-2 font-mono text-[10px] uppercase tracking-wider transition-all duration-200 mt-2 w-full max-w-[260px]",
+                isActiveFragment
+                    ? "bg-accent/10 border border-accent/50 text-accent"
+                    : "border border-border/50 text-muted-foreground hover:border-accent/40 hover:text-accent hover:bg-accent/5",
             )}
             onClick={() => onFragmentClick(fragment)}
         >
-            <Code2Icon className="size-4 mt-0.5" />
-            <div className="flex flex-col flex-1" >
-                <span className="text-sm font-medium line-clamp-1">{fragment.title}</span>
-                <span className="text-sm ">Preview</span>
-
-            </div>
-            <div
-                className="flex items-center justify-center mt-0.5"
-            >
-                <ChevronRightIcon className="size-4 " />
-            </div>
-
+            <Code2Icon className="h-3 w-3 shrink-0" />
+            <span className="line-clamp-1 flex-1 text-left">{fragment.title}</span>
+            <ChevronRightIcon className="h-2.5 w-2.5 shrink-0 opacity-50 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
         </button>
-    )
-}
+    );
+};
 
 const AssistantMessage = ({
     content,
@@ -61,60 +54,66 @@ const AssistantMessage = ({
     type
 }: AssistantMessageProps) => {
     return (
-        <div className={cn("flex flex-col group px-2 pb-4",
+        <div className={cn(
+            "flex gap-3 px-4 py-3",
             type === "ERROR" && "text-red-700 dark:text-red-500",
         )}>
-            <div className="flex items-center gap-2 pl-2 mb-2">
-                <Image
-                    src="/logo.svg"
-                    alt="Buildfy"
-                    width={18}
-                    height={18}
-                    className="shrink-0"
-                />
-                <span className="text-sm font-medium">Buildfy</span>
-                <span className="text-sm text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 ">
-
-                    {format(createdAt, "HH:mm 'on' MMMM dd, yyyy")}
-                </span>
-
-            </div>
-            <div
-                className="pl-8.5 flex flex-col gap-y-4">
-                <span>{content}</span>
-                {fragment && type === "RESULT"
-                    && (
-                        <FragmentCard
-                            fragment={fragment}
-                            isActiveFragment={isActiveFragment}
-                            onFragmentClick={onFragmentClick}
-                        />
-                    )
-
-                }
-
+            {/* Avatar */}
+            <div className="shrink-0 mt-0.5 flex items-center justify-center w-5 h-5">
+                <BuildfyLogo size={18} animate={false} />
             </div>
 
+            <div className="flex flex-col gap-2 min-w-0 flex-1">
+                {/* Name + time */}
+                <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] font-semibold text-foreground uppercase tracking-wider">
+                        Buildfy
+                    </span>
+                    <span className="font-mono text-[9px] text-muted-foreground/35 tabular-nums">
+                        {format(createdAt, "HH:mm")}
+                    </span>
+                </div>
+
+                {/* Content */}
+                <p className={cn(
+                    "font-mono text-sm leading-relaxed",
+                    type === "ERROR"
+                        ? "text-red-600 dark:text-red-400"
+                        : "text-muted-foreground"
+                )}>
+                    {content}
+                </p>
+
+                {/* Fragment card */}
+                {fragment && type === "RESULT" && (
+                    <FragmentCard
+                        fragment={fragment}
+                        isActiveFragment={isActiveFragment}
+                        onFragmentClick={onFragmentClick}
+                    />
+                )}
+            </div>
         </div>
-    )
-}
-
+    );
+};
 
 const UserMessage = ({ content }: UserMessageProps) => {
     return (
-        <div className="flex justify-end pb-4 pr-2 pl-10">
-            <Card
-                className="rounded-lg bg-muted p-3 shadow-none border-none max-w-[80%] break-words"
-            >
-                {content}
-            </Card>
+        <div className="flex justify-end px-4 py-2">
+            <div className="relative max-w-[82%]">
+                {/* Corner accent */}
+                <div className="absolute -top-px -right-px w-2 h-2 border-t border-r border-accent/40" />
+                <div className="absolute -bottom-px -right-px w-2 h-2 border-b border-r border-accent/20" />
+
+                <div className="border border-border/60 bg-secondary/20 px-4 py-3">
+                    <p className="font-mono text-sm text-foreground leading-relaxed">{content}</p>
+                </div>
+            </div>
         </div>
-    )
-}
+    );
+};
 
-
-
-interface MessafeCardProps {
+interface MessageCardProps {
     content: string;
     role: MessageRole;
     fragment: Fragment | null;
@@ -124,7 +123,6 @@ interface MessafeCardProps {
     type: MessageType;
 }
 
-
 export const MessageCard = ({
     content,
     role,
@@ -133,19 +131,18 @@ export const MessageCard = ({
     isActiveFragment,
     onFragmentClick,
     type
-}: MessafeCardProps) => {
+}: MessageCardProps) => {
     if (role === "ASSISTANT") {
         return (
-            <AssistantMessage content={content}
+            <AssistantMessage
+                content={content}
                 fragment={fragment}
                 createdAt={createdAt}
                 isActiveFragment={isActiveFragment}
                 onFragmentClick={onFragmentClick}
                 type={type}
             />
-        )
+        );
     }
-    return (
-        <UserMessage content={content} />
-    )
-}
+    return <UserMessage content={content} />;
+};

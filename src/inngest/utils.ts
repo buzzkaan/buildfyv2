@@ -25,11 +25,11 @@ export function lastAssistantTextMessageContent (result: AgentResult) {
 export const parseAgentOutput = (value: Message[]) => {
   const output = value[0]
 
-  if (output.type !== 'text') {
+  if (!output || output.type !== 'text') {
     return 'Fragment'
   }
   if (Array.isArray(output.content)) {
-    return output.content.map(txt => txt).join('')
+    return output.content.map(c => (typeof c === 'string' ? c : c.text)).join('')
   } else {
     return output.content
   }

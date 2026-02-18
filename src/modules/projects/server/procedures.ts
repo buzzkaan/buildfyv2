@@ -38,10 +38,32 @@ export const projectsRouter = createTRPCRouter({
       },
       orderBy: {
         updatedAt: 'desc'
+      },
+      take: 6,
+      include: {
+        messages: {
+          where: { fragment: { isNot: null } },
+          include: { fragment: { select: { id: true, sandboxUrl: true, sandboxId: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        }
       }
     })
     return projects
   }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string().min(1) }))
+    .mutation(async ({ input, ctx }) => {
+      const project = await prisma.project.findUnique({
+        where: { id: input.id, userId: ctx.auth.userId }
+      })
+      if (!project) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Project Not Found' })
+      }
+      await prisma.project.delete({ where: { id: input.id } })
+      return { success: true }
+    }),
 
   create: protectedProcedure
     .input(

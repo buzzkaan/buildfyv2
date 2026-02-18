@@ -1,11 +1,5 @@
 export const PROJECT_TEMPLATES = [
   {
-    emoji: '🎬',
-    title: 'Build a Netflix clone',
-    prompt:
-      'Build a Netflix-style homepage with a hero banner (use a nice, dark-mode compatible gradient here), movie sections, responsive cards, and a modal for viewing details using mock data and local state. Use dark mode.'
-  },
-  {
     emoji: '📦',
     title: 'Build an admin dashboard',
     prompt:

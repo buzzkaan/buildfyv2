@@ -20,6 +20,7 @@ import {
   parseAgentOutput
 } from './utils'
 import { setupEditModeInSandbox } from '@/lib/edit-mode-setup'
+import { E2B_TEMPLATE } from '@/lib/constants'
 
 interface AgentState {
   summary: string
@@ -32,7 +33,7 @@ export const codeAgentFunction = inngest.createFunction(
 
   async ({ event, step }) => {
     const sandBoxId = await step.run('get-sandbox-id', async () => {
-      const sandbox = await Sandbox.create('buildfy-nextjs-buzzka-test-2')
+      const sandbox = await Sandbox.create(E2B_TEMPLATE)
 
       // Setup edit mode in the sandbox
       await setupEditModeInSandbox(sandbox)
@@ -75,12 +76,14 @@ export const codeAgentFunction = inngest.createFunction(
       }
     )
 
+    const selectedModel = event.data.model || 'gpt-4.1'
+
     const codeAgent = createAgent<AgentState>({
       name: 'code-agent',
       system: PROMPT,
       description: 'An Expert Code Agent',
       model: openai({
-        model: 'gpt-4.1',
+        model: selectedModel,
         defaultParameters: {
           temperature: 0.1
         }
@@ -137,8 +140,10 @@ export const codeAgentFunction = inngest.createFunction(
               try {
                 const updateFiles = network.state.data.files || {}
                 const sandbox = await getSandbox(sandBoxId)
+                await Promise.all(
+                  files.map(file => sandbox.files.write(file.path, file.content))
+                )
                 for (const file of files) {
-                  await sandbox.files.write(file.path, file.content)
                   updateFiles[file.path] = file.content
                 }
 

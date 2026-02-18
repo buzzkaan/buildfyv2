@@ -1,33 +1,44 @@
-import { ProjectForm } from "@/modules/home/ui/components/project-form";
-import { ProjectsList } from "@/modules/home/ui/components/projects-list";
-import Image from "next/image";
+import { auth } from "@clerk/nextjs/server"
+import { HeroSection } from "@/modules/home/ui/components/hero-section"
+import { RecentProjects } from "@/modules/home/ui/components/recent-projects"
+import { TemplatesSection } from "@/modules/home/ui/components/templates-section"
+import { DesignSection } from "@/modules/home/ui/components/design-section"
+import { FeaturesGrid } from "@/modules/home/ui/components/features-grid"
+import { ShowcaseSection } from "@/modules/home/ui/components/showcase-section"
+import { TerminalShowcase } from "@/modules/home/ui/components/terminal-showcase"
+import { WorkSection } from "@/modules/home/ui/components/work-section"
+import { CtaSection } from "@/modules/home/ui/components/cta-section"
+import { FooterSection } from "@/modules/home/ui/components/footer-section"
+import { getQueryClient, trpc } from "@/trpc/server"
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query"
 
-const Page = () => {
+export default async function Page() {
+  const { userId } = await auth()
+  const isSignedIn = !!userId
+
+  const queryClient = getQueryClient()
+  if (isSignedIn) {
+    void queryClient.prefetchQuery(trpc.projects.getMany.queryOptions())
+  }
+
   return (
-    <div className="flex flex-col max-w-5xl mx-auto w-full">
-      <section className="space-y-6 py-[16vh] 2xl:py-48">
-        <div className="flex flex-col items-center">
-          <Image
-            src="/logo.svg"
-            alt="Buildfy"
-            width={50}
-            height={50}
-            className="hidden md:block"
-          />
-        </div>
-        <h1 className="text-2xl md:text-5xl font-bold text-center">
-          Build something with Buildfy
-        </h1>
-        <p className="text-lg md:text-xl text-muted-foreground text-center">
-          Create apps and websites by chatting with AI
-        </p>
-        <div className="max-w-3xl mx-auto w-full">
-          <ProjectForm />
-        </div>
-      </section>
-      <ProjectsList />
-    </div>
-  );
-};
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <HeroSection />
+      {isSignedIn && <RecentProjects />}
+      <TemplatesSection />
 
-export default Page;
+      {!isSignedIn && (
+        <>
+          <FeaturesGrid />
+          <ShowcaseSection />
+          <TerminalShowcase />
+          <WorkSection />
+          <DesignSection />
+          <CtaSection />
+        </>
+      )}
+
+      <FooterSection />
+    </HydrationBoundary>
+  )
+}
