@@ -98,7 +98,7 @@ export const ProjectForm = () => {
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className={cn(
-            "relative border bg-background/60 backdrop-blur-sm transition-colors duration-200",
+            "relative border bg-background transition-colors duration-200",
             isFocused ? "border-accent/60" : "border-border",
           )}
         >
@@ -115,7 +115,7 @@ export const ProjectForm = () => {
                   minRows={3}
                   maxRows={10}
                   placeholder="What would you like to build"
-                  className="w-full resize-none bg-transparent px-4 pt-4 pb-12 font-mono text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none leading-relaxed border-none"
+                  className="w-full resize-none bg-transparent px-4 pt-4 pb-12 font-mono text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none leading-relaxed border-none"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                       e.preventDefault()
@@ -129,11 +129,11 @@ export const ProjectForm = () => {
           <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BuildfyLogo size={16} animate={false} />
-              <kbd className="inline-flex items-center gap-1 border border-border/50 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-muted-foreground/80">
+              <kbd className="inline-flex items-center gap-1 border border-border/40 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-muted-foreground/60">
                 <span>&#8984;</span>
                 Enter
               </kbd>
-              <span className="font-mono text-[9px] text-muted-foreground/60 uppercase tracking-wider">
+              <span className="font-mono text-[9px] text-muted-foreground/40 uppercase tracking-wider">
                 to submit
               </span>
             </div>
@@ -143,7 +143,7 @@ export const ProjectForm = () => {
                 onClick={handleEnhance}
                 disabled={isPending || isEnhancing || !form.watch("value").trim()}
                 title="Enhance prompt with AI"
-                className="flex h-7 items-center gap-1.5 border border-border px-2.5 text-foreground/70 transition-all duration-200 hover:border-accent hover:text-accent disabled:opacity-30"
+                className="flex h-7 items-center gap-1.5 border border-border/40 px-2 text-muted-foreground transition-all duration-200 hover:border-accent hover:text-accent disabled:opacity-20"
               >
                 {isEnhancing ? (
                   <Loader2Icon className="h-3 w-3 animate-spin" />
@@ -157,7 +157,7 @@ export const ProjectForm = () => {
               <button
                 type="submit"
                 disabled={isButtonDisabled}
-                className="flex h-7 w-7 items-center justify-center bg-accent text-accent-foreground transition-all duration-200 hover:bg-accent/80 disabled:opacity-30 disabled:bg-border disabled:text-muted-foreground"
+                className="flex h-7 w-7 items-center justify-center border border-border/40 text-muted-foreground transition-all duration-200 hover:border-accent hover:text-accent disabled:opacity-20"
               >
                 {isPending ? (
                   <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
